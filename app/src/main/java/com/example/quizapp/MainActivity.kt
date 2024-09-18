@@ -104,7 +104,7 @@ fun QuizScreen(modifier: Modifier = Modifier,
         modifier = modifier
             .fillMaxSize()
             .padding(50.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.Center
     ) {
         if (currentQuestionIndex < questions.size) {
@@ -173,7 +173,7 @@ fun RadioButtonGroup(
 ) {
     Column(modifier.padding(16.dp)) {
         options.forEach { option ->
-            Row(modifier.padding(vertical = 8.dp)) {
+            Row(modifier.padding(vertical = 2.dp)) {
                 RadioButton(
                     selected = selectedOption == option,
                     onClick = { onOptionSelected(option) }
