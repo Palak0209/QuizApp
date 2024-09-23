@@ -147,18 +147,18 @@ fun QuizScreen(modifier: Modifier = Modifier,
                 ShowScore(score, questions.size)
 
                 //Return to home screen button
-                Button(
-                    onClick = {
-                        if (checkAnswer(selectedRadioOption, correctAnswers, currentQuestionIndex)) {
-                            score++
-                        }
-                        currentQuestionIndex++ // Move to next question
-                    },
-                    modifier = Modifier.padding(top = 20.dp)
-                ){
-                    Text(text = "Return to Home",
-                        fontSize = 24.sp)
-                }
+//                Button(
+//                    onClick = {
+//                        if (checkAnswer(selectedRadioOption, correctAnswers, currentQuestionIndex)) {
+//                            score++
+//                        }
+//                        currentQuestionIndex++ // Move to next question
+//                    },
+//                    modifier = Modifier.padding(top = 20.dp)
+//                ){
+//                    Text(text = "Return to Home",
+//                        fontSize = 24.sp)
+//                }
             }
         }
     }
