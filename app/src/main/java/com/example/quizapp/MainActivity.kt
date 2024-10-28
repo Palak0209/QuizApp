@@ -1,179 +1,277 @@
-package com.example.quizapp
+package com.example.quiz_app_compose
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.quizapp.ui.theme.QuizAppTheme
-val quiz = Quiz()
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.quizapp.Questions
+import com.example.quizapp.ui.theme.Quiz_app_composeTheme
+import com.example.quizapp.ui.theme.ThemeSettings
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            QuizAppTheme {
-                // Start with the topic selection screen
-                TopicSelectionScreen()
+            Quiz_app_composeTheme {
+// Scaffold(
+// modifier = Modifier
+// .fillMaxSize()
+// .padding(24.dp)
+// ) { innerPadding ->
+// Question(Modifier.padding(innerPadding))
+// }
+                Router()
             }
         }
     }
 }
 
-@Preview(showBackground = true)
+val fontSize = 24.sp
+val LocalNavController = compositionLocalOf<NavController> { error("No NavController found!") }
 @Composable
-fun GreetingPreview(modifier: Modifier = Modifier) {
-    QuizAppTheme {
-        TopicSelectionScreen()
+fun Router() {
+    val navController = rememberNavController()
+    var highScore by rememberSaveable { mutableStateOf(0) }
+    var quizScore by rememberSaveable { mutableStateOf(0) }
+
+    CompositionLocalProvider(LocalNavController provides navController) {
+        NavHost(navController = navController, startDestination = "MainScreenRoute") {
+            composable("MainScreenRoute") { MainScreen(highScore) }
+            composable("ScoreScreenRoute") { ScoreScreen(quizScore, highScore) }
+            composable("QuizScreenRoute") { QuizScreen(onQuizCompleted = { score ->
+                quizScore = score
+                if (score > highScore) {
+                    highScore = score
+                }
+                navController.navigate("ScoreScreenRoute")
+            })
+            }
+            composable("SettingsScreenRoute") { SettingsScreen() }
+        }
     }
 }
 
 @Composable
-fun TopicSelectionScreen(){
+fun MainScreen(highScore: Int) {
+    val navController = LocalNavController.current
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            if (highScore > 0) {
+                Text("Highest Score: ${highScore} /8", fontSize = fontSize)
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+            Button(onClick = { navController.navigate("QuizScreenRoute") }, modifier = Modifier.padding(8.dp)) {
+                Text("Start", fontSize = fontSize)
+            }
+            Button(onClick = { navController.navigate("ScoreScreenRoute") }, modifier = Modifier.padding(8.dp)) {
+                Text("Score", fontSize = fontSize)
+            }
+            Button(onClick = { navController.navigate("SettingsScreenRoute") }, modifier = Modifier.padding(8.dp)) {
+                Text("Settings", fontSize = fontSize)
+            }
+        }
+    }
+}
 
-    var selectedQuiz by remember { mutableStateOf<String?>(null) }
+@Composable
+fun ScoreScreen(quizScores: Int, highScore: Int) {
+    val navController = LocalNavController.current
 
-    if(selectedQuiz == null){
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 32.dp)
+        ) {
+            Text(text = "Quiz Scores")
+            Row {
+                Text(
+                    text = "Your Score: $quizScores",
+                    fontSize = fontSize,
+                    lineHeight = fontSize * 1.2
+                )
+            }
+            // Display high score if needed
+            Row {
+                Text(
+
+                    text = "Highest Score: ${highScore} / 8",
+                    fontSize = fontSize,
+                    lineHeight = fontSize * 1.2
+                )
+            }
+            Button(
+                onClick = { navController.navigate("MainScreenRoute") }
+            ) {
+                Text(
+                    text = "Back",
+                    modifier = Modifier.padding(0.dp),
+                    fontSize = fontSize
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SettingsScreen() {
+    val navController = LocalNavController.current
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        Column(modifier = Modifier.padding(26.dp)) {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    "Settings",
+                    fontSize = fontSize,
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Button(onClick = { ThemeSettings.isLightTheme = !ThemeSettings.isLightTheme }) {
+                    Text(if (ThemeSettings.isLightTheme) "Switch to Dark Theme" else "Switch to Light Theme")
+                }
+                Button(
+                    onClick = {navController.popBackStack()}
+                ) {
+                    Text(
+                        text = "Back",
+                        modifier = Modifier.padding(0.dp),
+                        fontSize = fontSize
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun QuizScreen(onQuizCompleted: (Int) -> Unit) {
+    val navController = LocalNavController.current
+    var questionId by remember { mutableIntStateOf(0) }
+    val currentQuestion = Questions.questions[questionId]
+    var selectedRadioOption by remember { mutableStateOf("") }
+    var score = 0
+
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
-            .background(Color(0xFFFFDFE0)),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ){
-            Text(text = "Select a Quiz Topic: ",
-                fontSize = 24.sp)
-
-            // Button for General Knowledge Quiz
-            Button(
-                onClick = { selectedQuiz = "general" },
-                modifier = Modifier.padding(top = 16.dp)
-            ) {
-                Text("General Knowledge")
-            }
-
-            // Button for Science Quiz
-            Button(
-                onClick = { selectedQuiz = "science" },
-                modifier = Modifier.padding(top = 16.dp)
-            ) {
-                Text("Science")
-            }
-        }
-    }
-    else{
-        // Start the appropriate quiz based on the selection
-        if (selectedQuiz == "general") {
-            QuizScreen(
-                questions = quiz.GetGKQuestions(),
-                options = quiz.GetGKOptions(),
-                correctAnswers = quiz.GetGKAnswers()
-            )
-        } else {
-            QuizScreen(
-                questions = quiz.GetScienceQuestions(),
-                options = quiz.GetScienceOptions(),
-                correctAnswers = quiz.GetScienceAnswers()
-            )
-        }
-    }
-}
-
-@Composable
-fun QuizScreen(modifier: Modifier = Modifier,
-               questions: List<String>,
-               options: List<List<String>>,
-               correctAnswers: List<String>) {
-
-    var score by remember { mutableStateOf(0) }
-    var currentQuestionIndex by remember { mutableStateOf(0) }
-    var selectedRadioOption by remember { mutableStateOf("") }
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(50.dp),
+                .padding(50.dp),
             horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.Center
-    ) {
-        if (currentQuestionIndex < questions.size) {
-            Text(text = "Question ${currentQuestionIndex + 1}",
-                fontSize = 24.sp)
+        ) {
+            if (questionId < Questions.questions.size - 1) {
+                Text(
+                    text = "Question ${questionId + 1}",
+                    fontSize = 24.sp
+                )
 
-            Text(text = questions[currentQuestionIndex],
-                fontSize = 24.sp)
+                Text(
+                    text = currentQuestion.text,
+                    fontSize = 24.sp
+                )
 
-            // Display the question and radio buttons
-            RadioButtonGroup(
-                modifier = modifier,
-                options = options[currentQuestionIndex],
-                selectedOption = selectedRadioOption,
-                onOptionSelected = { selectedRadioOption = it }
-            )
+                // Display the question and radio buttons
+                RadioButtonGroup(
+                    options = currentQuestion.answers,
+                    selectedOption = selectedRadioOption,
+                    onOptionSelected = { selectedRadioOption = it }
+                )
 
-            // Submit button
-            Button(
-                onClick = {
-                    if (checkAnswer(selectedRadioOption, correctAnswers, currentQuestionIndex)) {
-                        score++
-                    }
-                    currentQuestionIndex++ // Move to next question
-                },
-                modifier = Modifier.padding(top = 20.dp)
-            ) {
-                Text("Submit",
-                    fontSize = 24.sp)
+                // Submit button
+                Button(
+                    onClick = {
+                        if (checkAnswer(selectedRadioOption, currentQuestion.answers[currentQuestion.answer], questionId)) {
+                            score++
+                        }
+                        questionId++ // Move to next question
+                    },
+                    modifier = Modifier.padding(top = 20.dp)
+                ) {
+                    Text(
+                        "Next",
+                        fontSize = fontSize
+                    )
+                }
+            } else {
+                SubmitButton(onQuizCompleted)
             }
-        } else {
-            Column(
-                modifier = modifier
-                    .fillMaxSize()
-                    .padding(50.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ){
-                // Show the score once all questions are done
-                ShowScore(score, questions.size)
+            Button(
+                onClick = { navController.popBackStack() }
+            ) {
+                Text(
+                    text = "Back",
+                    modifier = Modifier.padding(0.dp),
+                    fontSize = fontSize
+                )
 
-                //Return to home screen button
-//                Button(
-//                    onClick = {
-//                        if (checkAnswer(selectedRadioOption, correctAnswers, currentQuestionIndex)) {
-//                            score++
-//                        }
-//                        currentQuestionIndex++ // Move to next question
-//                    },
-//                    modifier = Modifier.padding(top = 20.dp)
-//                ){
-//                    Text(text = "Return to Home",
-//                        fontSize = 24.sp)
-//                }
             }
         }
+
     }
 }
 
 @Composable
 fun RadioButtonGroup(
-    modifier: Modifier,
-    options: List<String>,
+    options: Array<String>,
     selectedOption: String,
     onOptionSelected: (String) -> Unit
 ) {
-    Column(modifier.padding(16.dp)) {
+    Column(Modifier.padding(16.dp)) {
         options.forEach { option ->
-            Row(modifier.padding(vertical = 2.dp)) {
+            Row(Modifier.padding(vertical = 2.dp)) {
                 RadioButton(
                     selected = selectedOption == option,
                     onClick = { onOptionSelected(option) }
@@ -185,43 +283,24 @@ fun RadioButtonGroup(
     }
 }
 
-private fun checkAnswer(selectedOption: String, correctAnswers: List<String>, currentQuestionIndex: Int): Boolean {
-    return selectedOption == correctAnswers[currentQuestionIndex]
+private fun checkAnswer(selectedOption: String, correctAnswer: String, currentQuestionIndex: Int): Boolean {
+    return selectedOption == correctAnswer
 }
 
 @Composable
-private fun ShowScore(score: Int, numberOfQuestions: Int) {
-
-    var homeReturnClicked by remember { mutableStateOf(false) }
-
-    if(homeReturnClicked){
-        TopicSelectionScreen()
-    }
-    else {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+fun SubmitButton(onQuizFinished: (Int) -> Unit) {
+    Row(
+        horizontalArrangement = Arrangement.End,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Button(
+            onClick = { onQuizFinished }
         ) {
             Text(
-                text = "Quiz finished!",
-                fontSize = 24.sp
+                text = "Submit",
+                modifier = Modifier.padding(0.dp),
+                fontSize = fontSize
             )
-            Text(
-                text = "Your final score: $score / $numberOfQuestions",
-                fontSize = 24.sp
-            )
-
-            //Return to home screen button
-            Button(
-                onClick = { homeReturnClicked = true },
-                modifier = Modifier.padding(top = 20.dp)
-            ) {
-                Text(
-                    text = "Return to Home",
-                    fontSize = 24.sp
-                )
-            }
         }
     }
 }
