@@ -22,10 +22,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,16 +59,24 @@ fun Router() {
     CompositionLocalProvider(LocalNavController provides navController) {
         NavHost(navController = navController, startDestination = "MainScreenRoute") {
             composable("MainScreenRoute") {
-                MainScreen(viewModel.highScore.value)
+                MainScreen({viewModel.resetQuiz()},
+                    viewModel.highScore.value)
             }
             composable("ScoreScreenRoute") {
                 ScoreScreen(viewModel.currentScore.value, viewModel.highScore.value)
             }
             composable("QuizScreenRoute") {
-                QuizScreen(onQuizCompleted = {
+                QuizScreen(
+                    {
                     viewModel.finishQuiz()
                 navController.navigate("ScoreScreenRoute")
-            })
+            },
+                    viewModel.currentQuestionIndex.value,
+                    viewModel.currentQuestion,
+                    { viewModel.hasMoreQuestions },
+                    { selectedAnswer -> viewModel.checkAnswer(selectedAnswer) },
+                    { viewModel.nextQuestion() }
+                )
             }
             composable("SettingsScreenRoute") {
                 SettingsScreen()
@@ -80,7 +86,7 @@ fun Router() {
 }
 
 @Composable
-fun MainScreen(highScore: Int) {
+fun MainScreen(resetQuiz: () -> Unit, highScore: Int) {
     val navController = LocalNavController.current
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -94,7 +100,8 @@ fun MainScreen(highScore: Int) {
                 Text("Highest Score: ${highScore} /8", fontSize = fontSize)
                 Spacer(modifier = Modifier.height(10.dp))
             }
-            Button(onClick = { navController.navigate("QuizScreenRoute") }, modifier = Modifier.padding(8.dp)) {
+            Button(onClick = { resetQuiz()
+                navController.navigate("QuizScreenRoute") }, modifier = Modifier.padding(8.dp)) {
                 Text("Start", fontSize = fontSize)
             }
             Button(onClick = { navController.navigate("ScoreScreenRoute") }, modifier = Modifier.padding(8.dp)) {
@@ -189,12 +196,16 @@ fun SettingsScreen() {
 }
 
 @Composable
-fun QuizScreen(onQuizCompleted: (Int) -> Unit) {
+fun QuizScreen(
+    onQuizCompleted: () -> Unit,
+    questionId: Int,
+    currentQuestion: Question,
+    hasMoreQuestions: () -> Boolean,
+    checkAnswer: (String) -> Unit,
+    nextQuestion: () -> Unit
+) {
     val navController = LocalNavController.current
-    var questionId by remember { mutableIntStateOf(0) }
-    val currentQuestion = Questions.questions[questionId]
     var selectedRadioOption by remember { mutableStateOf("") }
-    var score = 0
 
 
     Surface(
@@ -208,7 +219,7 @@ fun QuizScreen(onQuizCompleted: (Int) -> Unit) {
             horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.Center
         ) {
-            if (questionId < Questions.questions.size - 1) {
+            if (hasMoreQuestions()) {
                 Text(
                     text = "Question ${questionId + 1}",
                     fontSize = 24.sp
@@ -229,11 +240,9 @@ fun QuizScreen(onQuizCompleted: (Int) -> Unit) {
                 // Submit button
                 Button(
                     onClick = {
-                        if (checkAnswer(selectedRadioOption, currentQuestion.answers[currentQuestion.answer], questionId)) {
-                            score++
-                        }
-                        questionId++ // Move to next question
-                    },
+                        checkAnswer(selectedRadioOption)
+                                nextQuestion()
+                        },
                     modifier = Modifier.padding(top = 20.dp)
                 ) {
                     Text(
@@ -279,18 +288,14 @@ fun RadioButtonGroup(
     }
 }
 
-private fun checkAnswer(selectedOption: String, correctAnswer: String, currentQuestionIndex: Int): Boolean {
-    return selectedOption == correctAnswer
-}
-
 @Composable
-fun SubmitButton(onQuizFinished: (Int) -> Unit) {
+fun SubmitButton(onQuizCompleted: () -> Unit) {
     Row(
         horizontalArrangement = Arrangement.End,
         modifier = Modifier.fillMaxWidth()
     ) {
         Button(
-            onClick = { onQuizFinished }
+            onClick = { onQuizCompleted() }
         ) {
             Text(
                 text = "Submit",
