@@ -1,4 +1,4 @@
-package com.example.quiz_app_compose
+package com.example.quizapp
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -31,11 +31,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.quizapp.Questions
 import com.example.quizapp.ui.theme.Quiz_app_composeTheme
 import com.example.quizapp.ui.theme.ThemeSettings
 
@@ -45,13 +45,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             Quiz_app_composeTheme {
-// Scaffold(
-// modifier = Modifier
-// .fillMaxSize()
-// .padding(24.dp)
-// ) { innerPadding ->
-// Question(Modifier.padding(innerPadding))
-// }
                 Router()
             }
         }
@@ -63,22 +56,25 @@ val LocalNavController = compositionLocalOf<NavController> { error("No NavContro
 @Composable
 fun Router() {
     val navController = rememberNavController()
-    var highScore by rememberSaveable { mutableStateOf(0) }
-    var quizScore by rememberSaveable { mutableStateOf(0) }
+    val viewModel : QuizViewModel = viewModel()
 
     CompositionLocalProvider(LocalNavController provides navController) {
         NavHost(navController = navController, startDestination = "MainScreenRoute") {
-            composable("MainScreenRoute") { MainScreen(highScore) }
-            composable("ScoreScreenRoute") { ScoreScreen(quizScore, highScore) }
-            composable("QuizScreenRoute") { QuizScreen(onQuizCompleted = { score ->
-                quizScore = score
-                if (score > highScore) {
-                    highScore = score
-                }
+            composable("MainScreenRoute") {
+                MainScreen(viewModel.highScore.value)
+            }
+            composable("ScoreScreenRoute") {
+                ScoreScreen(viewModel.currentScore.value, viewModel.highScore.value)
+            }
+            composable("QuizScreenRoute") {
+                QuizScreen(onQuizCompleted = {
+                    viewModel.finishQuiz()
                 navController.navigate("ScoreScreenRoute")
             })
             }
-            composable("SettingsScreenRoute") { SettingsScreen() }
+            composable("SettingsScreenRoute") {
+                SettingsScreen()
+            }
         }
     }
 }
