@@ -22,19 +22,15 @@ class QuizViewModel : ViewModel() {
     val hasMoreQuestions: Boolean
         get() = currentQuestionIndex.value < allQuestions.size - 1
 
-//    fun toggleTheme() {
-//        ThemeSettings.isLightTheme = !ThemeSettings.isLightTheme
-//        saveTheme(isLightTheme.value)
-//    }
-
     fun toggleTheme() {
         val newTheme = !isLightTheme.value
         isLightTheme.value = newTheme
         ThemeSettings.isLightTheme = newTheme // Update ThemeSettings
     }
 
-    fun checkAnswer(selectedAnswerIndex: Int):Boolean{
-        return selectedAnswerIndex == currentQuestion.answer
+    fun checkAnswer(selectedAnswer: String) {
+        if(selectedAnswer == currentQuestion.answer)
+            currentScore.value += 1
     }
 
     fun nextQuestion() {
@@ -47,10 +43,9 @@ class QuizViewModel : ViewModel() {
         if (currentScore.value > highScore.value) {
             highScore.value = currentScore.value
         }
-        resetQuiz()
     }
 
-    private fun resetQuiz() {
+    fun resetQuiz() {
         currentQuestionIndex.value = 0
         currentScore.value = 0
     }
