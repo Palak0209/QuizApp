@@ -1,12 +1,12 @@
 package com.example.quizapp
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.quizapp.ui.theme.ThemeSettings
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-class QuizViewModel : ViewModel() {
+class QuizViewModel(private val settingsDataStore: SettingsDataStore) : ViewModel() {
 
     var isLightTheme = mutableStateOf(ThemeSettings.isLightTheme)
         private set
@@ -22,10 +22,27 @@ class QuizViewModel : ViewModel() {
     val hasMoreQuestions: Boolean
         get() = currentQuestionIndex.value < allQuestions.size - 1
 
-    fun toggleTheme() {
+    init {
+        viewModelScope.launch {
+            settingsDataStore.isLightTheme.collectLatest { theme ->
+                isLightTheme.value = theme
+                ThemeSettings.isLightTheme = isLightTheme.value
+            }
+        }
+        viewModelScope.launch {
+            settingsDataStore.highScore.collectLatest { score ->
+                highScore.value = score
+            }
+        }
+    }
+
+    fun changeTheme() {
         val newTheme = !isLightTheme.value
         isLightTheme.value = newTheme
-        ThemeSettings.isLightTheme = newTheme // Update ThemeSettings
+        ThemeSettings.isLightTheme = newTheme
+        viewModelScope.launch {
+            settingsDataStore.saveLightTheme(newTheme)
+        }// Update ThemeSettings
     }
 
     fun checkAnswer(selectedAnswer: String) {
@@ -42,6 +59,9 @@ class QuizViewModel : ViewModel() {
     fun finishQuiz() {
         if (currentScore.value > highScore.value) {
             highScore.value = currentScore.value
+        }
+        viewModelScope.launch {
+            settingsDataStore.saveHighScore(highScore.value)
         }
     }
 
