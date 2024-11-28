@@ -3,7 +3,6 @@ package com.example.quizapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +19,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,7 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -40,10 +39,16 @@ import com.example.quizapp.ui.theme.ThemeSettings
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        val dataStoreManager = SettingsDataStore(applicationContext)
+
         setContent {
+            // Pass DataStoreManager to the ViewModel
+            val viewModel: QuizViewModel = QuizViewModel(
+                dataStoreManager
+            )
+
             Quiz_app_composeTheme {
-                Router()
+                Router(viewModel)
             }
         }
     }
@@ -52,9 +57,9 @@ class MainActivity : ComponentActivity() {
 val fontSize = 24.sp
 val LocalNavController = compositionLocalOf<NavController> { error("No NavController found!") }
 @Composable
-fun Router() {
+fun Router(viewModel : QuizViewModel) {
     val navController = rememberNavController()
-    val viewModel : QuizViewModel = viewModel()
+    //val viewModel : QuizViewModel = viewModel()
 
     CompositionLocalProvider(LocalNavController provides navController) {
         NavHost(navController = navController, startDestination = "MainScreenRoute") {
@@ -68,9 +73,9 @@ fun Router() {
             composable("QuizScreenRoute") {
                 QuizScreen(
                     {
-                    viewModel.finishQuiz()
-                navController.navigate("ScoreScreenRoute")
-            },
+                        viewModel.finishQuiz()
+                        navController.navigate("ScoreScreenRoute")
+                    },
                     viewModel.currentQuestionIndex.value,
                     viewModel.currentQuestion,
                     { viewModel.hasMoreQuestions },
@@ -79,7 +84,9 @@ fun Router() {
                 )
             }
             composable("SettingsScreenRoute") {
-                SettingsScreen()
+                SettingsScreen( {viewModel.changeTheme()},
+                    viewModel.isLightTheme
+                )
             }
         }
     }
@@ -96,10 +103,9 @@ fun MainScreen(resetQuiz: () -> Unit, highScore: Int) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (highScore > 0) {
-                Text("Highest Score: ${highScore} /8", fontSize = fontSize)
-                Spacer(modifier = Modifier.height(10.dp))
-            }
+            Text("Highest Score: ${highScore} /8", fontSize = fontSize)
+            Spacer(modifier = Modifier.height(10.dp))
+
             Button(onClick = { resetQuiz()
                 navController.navigate("QuizScreenRoute") }, modifier = Modifier.padding(8.dp)) {
                 Text("Start", fontSize = fontSize)
@@ -156,8 +162,9 @@ fun ScoreScreen(quizScores: Int, highScore: Int) {
 }
 
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(changeTheme: () -> Unit, lightTheme: MutableState<Boolean>) {
     val navController = LocalNavController.current
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -178,8 +185,8 @@ fun SettingsScreen() {
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Button(onClick = { ThemeSettings.isLightTheme = !ThemeSettings.isLightTheme }) {
-                    Text(if (ThemeSettings.isLightTheme) "Switch to Dark Theme" else "Switch to Light Theme")
+                Button(onClick = { changeTheme() }) {
+                    Text(if (lightTheme.value) "Switch to Dark Theme" else "Switch to Light Theme")
                 }
                 Button(
                     onClick = {navController.popBackStack()}
@@ -241,8 +248,8 @@ fun QuizScreen(
                 Button(
                     onClick = {
                         checkAnswer(selectedRadioOption)
-                                nextQuestion()
-                        },
+                        nextQuestion()
+                    },
                     modifier = Modifier.padding(top = 20.dp)
                 ) {
                     Text(
@@ -299,7 +306,7 @@ fun SubmitButton(onQuizCompleted: () -> Unit) {
         ) {
             Text(
                 text = "Submit",
-                modifier = Modifier.padding(0.dp),
+                modifier = Modifier.padding(10.dp),
                 fontSize = fontSize
             )
         }
