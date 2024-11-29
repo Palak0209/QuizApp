@@ -14,6 +14,7 @@ val Context.dataStore by preferencesDataStore(name = "quiz_preferences")
 class SettingsDataStore(private val context: Context) {
 
     companion object {
+        private val TIMER_ENABLED_KEY = booleanPreferencesKey("timer_enabled")
         private val LIGHT_THEME_KEY = booleanPreferencesKey("light_theme")
         private val HIGH_SCORE_KEY = intPreferencesKey("high_score")
     }
@@ -37,6 +38,17 @@ class SettingsDataStore(private val context: Context) {
     suspend fun saveHighScore(score: Int) {
         context.dataStore.edit { preferences ->
             preferences[HIGH_SCORE_KEY] = score
+        }
+    }
+
+    val isTimerEnabled: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[TIMER_ENABLED_KEY] ?: false // Default to timer off
+        }
+
+    suspend fun saveTimerState(isEnabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[TIMER_ENABLED_KEY] = isEnabled
         }
     }
 }
