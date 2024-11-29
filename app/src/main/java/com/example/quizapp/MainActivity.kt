@@ -1,6 +1,7 @@
 package com.example.quizapp
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +20,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
@@ -34,7 +36,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.quizapp.ui.theme.Quiz_app_composeTheme
-import com.example.quizapp.ui.theme.ThemeSettings
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -80,12 +81,17 @@ fun Router(viewModel : QuizViewModel) {
                     viewModel.currentQuestion,
                     { viewModel.hasMoreQuestions },
                     { selectedAnswer -> viewModel.checkAnswer(selectedAnswer) },
-                    { viewModel.nextQuestion() }
+                    { viewModel.nextQuestion() },
+                    { viewModel.startQuizTimer { navController.navigate("ScoreScreenRoute")} },
+                    viewModel.isTimerEnabled.value,
+                    viewModel.remainingTime.value
                 )
             }
             composable("SettingsScreenRoute") {
                 SettingsScreen( {viewModel.changeTheme()},
-                    viewModel.isLightTheme
+                    viewModel.isLightTheme,
+                    {viewModel.toggleTimer()},
+                    viewModel.isTimerEnabled.value
                 )
             }
         }
@@ -162,7 +168,12 @@ fun ScoreScreen(quizScores: Int, highScore: Int) {
 }
 
 @Composable
-fun SettingsScreen(changeTheme: () -> Unit, lightTheme: MutableState<Boolean>) {
+fun SettingsScreen(
+    changeTheme: () -> Unit,
+    lightTheme: MutableState<Boolean>,
+    toggleTimer: () -> Unit,
+    isTimerEnabled: Boolean
+) {
     val navController = LocalNavController.current
 
     Surface(
@@ -188,6 +199,9 @@ fun SettingsScreen(changeTheme: () -> Unit, lightTheme: MutableState<Boolean>) {
                 Button(onClick = { changeTheme() }) {
                     Text(if (lightTheme.value) "Switch to Dark Theme" else "Switch to Light Theme")
                 }
+                Button(onClick = { toggleTimer() }) {
+                    Text(if (isTimerEnabled) "Disable Timer" else "Enable Timer")
+                }
                 Button(
                     onClick = {navController.popBackStack()}
                 ) {
@@ -209,16 +223,35 @@ fun QuizScreen(
     currentQuestion: Question,
     hasMoreQuestions: () -> Boolean,
     checkAnswer: (String) -> Unit,
-    nextQuestion: () -> Unit
+    nextQuestion: () -> Unit,
+    startQuizTimer: (onTimeUp: () -> Unit) -> Unit,
+    timerEnabled: Boolean,
+    remainingTime: Int
 ) {
     val navController = LocalNavController.current
     var selectedRadioOption by remember { mutableStateOf("") }
 
 
+
+    LaunchedEffect(Unit) {
+        if (timerEnabled) {
+            startQuizTimer {
+                Log.d("5124", "text")
+                navController.navigate("ScoreScreenRoute")
+            }
+        }
+    }
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
+        if (timerEnabled) {
+            Text(
+                text = "Time remaining: ${remainingTime}s",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(8.dp)
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
