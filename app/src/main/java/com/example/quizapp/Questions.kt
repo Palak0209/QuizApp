@@ -10,6 +10,7 @@ class Questions () {
             Question("Which element has the chemical symbol 'O'?", arrayOf("Oxygen", "Gold", "Hydrogen", "Carbon"), 0),
             Question("What is the smallest prime number?", arrayOf("1", "2", "3", "5"), 1),
             Question("Which country is known as the Land of the Rising Sun?", arrayOf("China", "Japan", "Thailand", "South Korea"), 1),
+            Question("What is the freezing point of water in degrees Celsius?", arrayOf("0", "32", "100", "273"), 0),
             Question("What is the freezing point of water in degrees Celsius?", arrayOf("0", "32", "100", "273"), 0)
         )
             get() = field
