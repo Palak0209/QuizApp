@@ -28,6 +28,10 @@ The Quiz App is a Kotlin-based Android application developed using Jetpack Compo
 
 - High Scores Screen: Displays a list of top scores.
 
+![Application screen](app/src/main/res/project1-1.png)
+![Application screen](app/src/main/res/project1-2.png)
+![Application screen](app/src/main/res/project1-3.png)
+
 ## Technologies Used
 
 - Kotlin: For application development.
